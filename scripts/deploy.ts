@@ -1,30 +1,104 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
+import config from "../config";
 
-async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+const currentNetwork = network.name;
 
-  // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+const main = async (withVRFOnTestnet = true) => {
+  const KiguriLottery = await ethers.getContractFactory("KiguriLottery");
 
-  await greeter.deployed();
+  if (currentNetwork == "testnet") {
+    let randomNumberGenerator;
 
-  console.log("Greeter deployed to:", greeter.address);
-}
+    if (withVRFOnTestnet) {
+      console.log("RandomNumberGenerator with VRF is deployed..");
+      const RandomNumberGenerator = await ethers.getContractFactory(
+        "RandomNumberGenerator"
+      );
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+      randomNumberGenerator = await RandomNumberGenerator.deploy(
+        config.VRFCoordinator[currentNetwork],
+        config.LinkToken[currentNetwork]
+      );
+      await randomNumberGenerator.deployed();
+      console.log(
+        "RandomNumberGenerator deployed to:",
+        randomNumberGenerator.address
+      );
+
+      // Set fee
+      await randomNumberGenerator.setFee(config.FeeInLink[currentNetwork]);
+
+      // Set key hash
+      await randomNumberGenerator.setKeyHash(config.KeyHash[currentNetwork]);
+    } else {
+      console.log("RandomNumberGenerator without VRF is deployed..");
+
+      const RandomNumberGenerator = await ethers.getContractFactory(
+        "MockRandomNumberGenerator"
+      );
+      randomNumberGenerator = await RandomNumberGenerator.deploy();
+      await randomNumberGenerator.deployed();
+
+      console.log(
+        "RandomNumberGenerator deployed to:",
+        randomNumberGenerator.address
+      );
+    }
+
+    const kiguriLottery = await KiguriLottery.deploy(
+      config.CakeToken[currentNetwork],
+      randomNumberGenerator.address
+    );
+
+    await kiguriLottery.deployed();
+    console.log("KiguriLottery deployed to:", kiguriLottery.address);
+
+    // Set lottery address
+    await randomNumberGenerator.setLotteryAddress(kiguriLottery.address);
+  } else if (currentNetwork == "mainnet") {
+    const RandomNumberGenerator = await ethers.getContractFactory(
+      "RandomNumberGenerator"
+    );
+    const randomNumberGenerator = await RandomNumberGenerator.deploy(
+      config.VRFCoordinator[currentNetwork],
+      config.LinkToken[currentNetwork]
+    );
+
+    await randomNumberGenerator.deployed();
+    console.log(
+      "RandomNumberGenerator deployed to:",
+      randomNumberGenerator.address
+    );
+
+    // Set fee
+    await randomNumberGenerator.setFee(config.FeeInLink[currentNetwork]);
+
+    // Set key hash
+    await randomNumberGenerator.setKeyHash(config.KeyHash[currentNetwork]);
+
+    const kgiruiLottery = await KiguriLottery.deploy(
+      config.CakeToken[currentNetwork],
+      randomNumberGenerator.address
+    );
+
+    await kgiruiLottery.deployed();
+    console.log("KiguriLottery deployed to:", kgiruiLottery.address);
+
+    // Set lottery address
+    await randomNumberGenerator.setLotteryAddress(kgiruiLottery.address);
+
+    // Set operator & treasury adresses
+    await kgiruiLottery.setOperatorAndTreasuryAndInjectorAddresses(
+      config.OperatorAddress[currentNetwork],
+      config.TreasuryAddress[currentNetwork],
+      config.InjectorAddress[currentNetwork]
+    );
+  }
+};
+
+main(true)
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

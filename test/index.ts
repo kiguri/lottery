@@ -1,6 +1,8 @@
+/* eslint-disable no-await-in-loop */
 import { parseEther } from "ethers/lib/utils";
 import { artifacts, contract } from "hardhat";
-import { assert, expect } from "chai";
+import { assert } from "chai";
+
 import {
   BN,
   constants,
@@ -9,20 +11,20 @@ import {
   time,
 } from "@openzeppelin/test-helpers";
 
-const MockERC20 = artifacts.require("./utils/MockERC20.sol");
+const MockERC20 = artifacts.require("./mocks/MockERC20.sol");
 const MockRandomNumberGenerator = artifacts.require(
-  "./utils/MockRandomNumberGenerator.sol"
+  "./mocks/MockRandomNumberGenerator.sol"
 );
-const PancakeSwapLottery = artifacts.require("./PancakeSwapLottery.sol");
+const KiguriLottery = artifacts.require("./KiguriLottery.sol");
 
 const PRICE_BNB = 400;
 
-function gasToBNB(gas: number, gwei: number = 5) {
+function gasToBNB(gas: number, gwei = 5) {
   const num = gas * gwei * 10 ** -9;
   return num.toFixed(4);
 }
 
-function gasToUSD(gas: number, gwei: number = 5, priceBNB: number = PRICE_BNB) {
+function gasToUSD(gas: number, gwei = 5, priceBNB: number = PRICE_BNB) {
   const num = gas * priceBNB * gwei * 10 ** -9;
   return num.toFixed(2);
 }
@@ -33,18 +35,20 @@ contract(
     // VARIABLES
     const _totalInitSupply = parseEther("10000");
 
-    let _lengthLottery = new BN("14400"); // 4h
-    let _priceTicketInCake = parseEther("0.5");
+    let _lengthLottery = new BN("1200"); // 20 minutes
+    const _priceTicketInCake = parseEther("0.5");
     let _discountDivisor = "2000";
 
     let _rewardsBreakdown = ["200", "300", "500", "1500", "2500", "5000"];
     let _treasuryFee = "2000";
 
     // Contracts
-    let lottery, mockCake, randomNumberGenerator;
+    let lottery;
+    let mockCake;
+    let randomNumberGenerator;
 
     // Generic variables
-    let result: any;
+    let result;
     let endTime;
 
     before(async () => {
@@ -56,8 +60,8 @@ contract(
         from: alice,
       });
 
-      // Deploy PancakeSwapLottery
-      lottery = await PancakeSwapLottery.new(
+      // Deploy Lottery
+      lottery = await KiguriLottery.new(
         mockCake.address,
         randomNumberGenerator.address,
         { from: alice }
@@ -77,14 +81,15 @@ contract(
           { from: alice }
         );
         expectEvent(result, "NewOperatorAndTreasuryAndInjectorAddresses", {
-          operator: operator,
-          treasury: treasury,
-          injector: injector,
+          operator,
+          treasury,
+          injector,
         });
       });
 
       it("Users mint and approve CAKE to be used in the lottery", async () => {
-        for (let thisUser of [alice, bob, carol, david, erin, injector]) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const thisUser of [alice, bob, carol, david, erin, injector]) {
           await mockCake.mintTokens(parseEther("100000"), { from: thisUser });
           await mockCake.approve(lottery.address, parseEther("100000"), {
             from: thisUser,
@@ -255,7 +260,7 @@ contract(
         result = await lottery.viewUserInfoForLotteryId(bob, "1", 0, 100);
         const bobTicketIds = [];
 
-        result[0].forEach(function (value) {
+        result[0].forEach((value) => {
           bobTicketIds.push(value.toString());
         });
 

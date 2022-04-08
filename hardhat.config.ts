@@ -1,42 +1,53 @@
-import * as dotenv from "dotenv";
-
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
+import type { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-web3";
+import "@nomiclabs/hardhat-truffle5";
+import "hardhat-abi-exporter";
+import "hardhat-contract-sizer";
 import "solidity-coverage";
+import "dotenv/config";
 
-dotenv.config();
+const bscTestnet: NetworkUserConfig = {
+  url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+  chainId: 97,
+  accounts: [process.env.KEY_TESTNET!],
+};
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const bscMainnet: NetworkUserConfig = {
+  url: "https://bsc-dataseed.binance.org/",
+  chainId: 56,
+  accounts: [process.env.KEY_MAINNET!],
+};
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  defaultNetwork: "hardhat",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    hardhat: {
+      gas: 120000000,
+      blockGasLimit: 0x1fffffffffffff,
+    },
+    // testnet: bscTestnet,
+    // mainnet: bscMainnet,
+  },
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 99999,
+      },
     },
   },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+  abiExporter: {
+    path: "./data/abi",
+    clear: true,
+    flat: false,
   },
 };
 
