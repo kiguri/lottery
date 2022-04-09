@@ -4,6 +4,10 @@ import config from "../config";
 const currentNetwork = network.name;
 
 const main = async (withVRFOnTestnet = true) => {
+  const [deployer] = await ethers.getSigners();
+
+  console.log("Deploying contracts with the account:", deployer.address);
+
   const KiguriLottery = await ethers.getContractFactory("KiguriLottery");
 
   if (currentNetwork == "testnet") {

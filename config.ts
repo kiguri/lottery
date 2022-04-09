@@ -3,6 +3,10 @@ export default {
     mainnet: "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82",
     testnet: "0xa35062141fa33bca92ce69fed37d0e8908868aae",
   },
+  MikasaToken: {
+    mainnet: "",
+    testnet: "0x8557A7c6639C34D4b158c06Ad325eEEE3DE0bb13",
+  },
   LinkToken: {
     mainnet: "0x404460C6A5EdE2D891e8297795264fDe62ADBB75",
     testnet: "0x84b9B910527Ad5C03A9Ca831909E21e236EA7b06",

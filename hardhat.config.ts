@@ -5,18 +5,21 @@ import "@nomiclabs/hardhat-truffle5";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
-import "dotenv/config";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const bscTestnet: NetworkUserConfig = {
   url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
   chainId: 97,
-  accounts: [process.env.KEY_TESTNET!],
+  accounts:
+    process.env.KEY_TESTNET !== undefined ? [process.env.KEY_TESTNET] : [],
 };
 
 const bscMainnet: NetworkUserConfig = {
   url: "https://bsc-dataseed.binance.org/",
   chainId: 56,
-  accounts: [process.env.KEY_MAINNET!],
+  accounts: [process.env.KEY_MAINNET],
 };
 
 const config: HardhatUserConfig = {
@@ -26,7 +29,7 @@ const config: HardhatUserConfig = {
       gas: 120000000,
       blockGasLimit: 0x1fffffffffffff,
     },
-    // testnet: bscTestnet,
+    testnet: bscTestnet,
     // mainnet: bscMainnet,
   },
   solidity: {
